@@ -1,3 +1,6 @@
+import { VERSION } from './version.js';
+console.log('Script version:', VERSION);
+
 document.addEventListener("DOMContentLoaded", function() {
   // ─── Basic Setup ───────────────────────────────────────────────────
   const MIN_PERCENTAGE = 1; // Minimum width % for any section
