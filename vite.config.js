@@ -1,7 +1,7 @@
-const { defineConfig } = require('vite');
-const path = require('path');
+import { defineConfig } from 'vite';
+import path from 'path';
 
-module.exports = defineConfig({
+export default defineConfig({
   build: {
     outDir: 'dist',
     rollupOptions: {
@@ -10,7 +10,7 @@ module.exports = defineConfig({
         // Always emit the main entry as "bundle.js"
         entryFileNames: 'bundle.js',
         // Hash other assets for caching
-        assetFileNames: 'assets/[name].[hash].[ext]'
+        assetFileNames: 'assets/[name].[hash].[ext]',
       }
     }
   }
