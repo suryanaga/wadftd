@@ -1,7 +1,7 @@
-import { defineConfig } from 'vite';
-import path from 'path';
+const { defineConfig } = require('vite');
+const path = require('path');
 
-export default defineConfig({
+module.exports = defineConfig({
   build: {
     outDir: 'dist',
     rollupOptions: {
