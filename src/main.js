@@ -1,5 +1,5 @@
 import { VERSION } from './version.js';
-console.log('Script version (initial):', VERSION);
+console.log('📦 Script version (initial):', VERSION);
 
 document.addEventListener("DOMContentLoaded", function() {
   // ─── Basic Setup ───────────────────────────────────────────────────
@@ -387,6 +387,8 @@ document.addEventListener("DOMContentLoaded", function() {
 
   // ─── Helpers: Update Totals & Build Handles ───────────────────────
   function updateTotal() {
+    console.log('🔄 updateTotal fired; sections =', document.querySelectorAll('.allocation-section').length);
+
     const bar = document.getElementById("allocation-bar");
     const totalAmount = parseFloat(bar.dataset.totalAmount) || 0;
     const secs = [...bar.querySelectorAll(".allocation-section")];
@@ -407,6 +409,8 @@ document.addEventListener("DOMContentLoaded", function() {
   }
 
   function rebuildBoundaryHandles() {
+    console.log('🔧 rebuildBoundaryHandles invoked');
+    
     const bar = document.getElementById("allocation-bar");
     bar.querySelectorAll(".boundary-handle").forEach(h => h.remove());
     const secs = [...bar.querySelectorAll(".allocation-section")];
