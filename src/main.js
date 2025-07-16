@@ -293,18 +293,18 @@ document.addEventListener("DOMContentLoaded", function() {
     }
   });
 
-  // ─── New: Checkbox Toggle Handler ─────────────────────────────────
-  document.querySelectorAll(".autocomplete--checkbox")
-    .forEach(cb => cb.addEventListener("change", onCheckboxToggle));
-
-  function onCheckboxToggle(e) {
+  // Delegate checkbox changes for all charities (static & CMS-loaded)
+  document.addEventListener('change', e => {
     const cb = e.target;
-    const name = cb.dataset.itemName;
-    const listContainer = cb.closest(".autocomplete--list-container");
-    const type = listContainer?.dataset.charityType || null;
-    if (cb.checked) addCharityByName(name, type);
-    else             removeCharityByName(name);
-  }
+    if (cb.matches('input[type="checkbox"][data-item-name]')) {
+      const name = cb.dataset.itemName;
+      const listContainer = cb.closest('.autocomplete--list-container');
+      const type = listContainer?.dataset.charityType || null;
+      if (cb.checked) addCharityByName(name, type);
+      else             removeCharityByName(name);
+      updateTotal();
+    }
+  });
 
   function sanitizeId(str) {
     return str.replace(/\W+/g, '');
