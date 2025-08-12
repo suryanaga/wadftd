@@ -22,6 +22,34 @@ document.addEventListener("DOMContentLoaded", function() {
     "Retreat/GFR":   "https://cdn.prod.website-files.com/66cddc57f886c22c624244dc/67322b0aeb4ef255c66d5694_Painted%201.avif"
   };
 
+  // ─── Currency Handling (symbol + code display) ────────────────────
+  const currencyMap = {
+    USD: { symbol: '$', display: '$USD', code: 'USD' },
+    NZD: { symbol: '$', display: '$NZD', code: 'NZD' },
+    AUD: { symbol: '$', display: '$AUD', code: 'AUD' },
+    MXN: { symbol: '$', display: '$MXN', code: 'MXN' },
+    GBP: { symbol: '£', display: '£GBP', code: 'GBP' },
+    EUR: { symbol: '€', display: '€EUR', code: 'EUR' },
+    INR: { symbol: '₹', display: '₹INR', code: 'INR' }
+  };
+
+  function resolveCurrency(selectionValue) {
+    // Try by code first (e.g. "USD"), then by raw symbol (e.g. "$"), else default to GBP
+    if (currencyMap[selectionValue]) return currencyMap[selectionValue];
+    const bySymbol = Object.values(currencyMap).find(c => c.symbol === selectionValue);
+    return bySymbol || currencyMap.GBP;
+  }
+
+  function getSelectedCurrency() {
+    const code     = localStorage.getItem('selectedCurrencyCode');
+    const display  = localStorage.getItem('selectedCurrencyDisplay');
+    const symbol   = localStorage.getItem('selectedCurrencySymbol');
+    if (code && display && symbol) return { code, display, symbol };
+    // Fallback
+    const d = currencyMap.GBP;
+    return { code: d.code, display: d.display, symbol: d.symbol };
+  }
+
   // Prevent Enter from submitting the email form
   document.getElementById("email-form-2").addEventListener("keydown", e => {
     if (e.key === "Enter") e.preventDefault();
@@ -55,9 +83,12 @@ document.addEventListener("DOMContentLoaded", function() {
       .classList.remove("pledge-section-disabled","pledge-section-overlay");
 
     // Get and store currency
-    const selectedCurrency = document.getElementById("currencySelector").value;
-    localStorage.setItem("selectedCurrency", selectedCurrency);
-    replaceCurrencySymbols(selectedCurrency);
+    const currencySelection = document.getElementById('currencySelector').value; // may be a code (USD) or a symbol ($)
+    const cur = resolveCurrency(currencySelection);
+    localStorage.setItem('selectedCurrencyCode', cur.code);
+    localStorage.setItem('selectedCurrencyDisplay', cur.display);
+    localStorage.setItem('selectedCurrencySymbol', cur.symbol);
+    replaceCurrencySymbols();
 
     // Calculate daily income
     const monthly = parseFloat(document.getElementById("monthlyIncome").value);
@@ -70,13 +101,14 @@ document.addEventListener("DOMContentLoaded", function() {
     // Scroll to Section 2 and open its accordion
     document.getElementById("s2-head").scrollIntoView({ behavior: "smooth" });
     document.getElementById("s2-head").click();
-    document.getElementById("oneDayForYou").textContent = `${selectedCurrency}${daily.toFixed(2)}`;
+    const { display: currencyDisplay } = getSelectedCurrency();
+    document.getElementById('oneDayForYou').textContent = `${currencyDisplay}${daily.toFixed(2)}`;
 
     // Update radio labels
-    updateRadioButton("1-Day",    daily,         "1 Day",  selectedCurrency);
-    updateRadioButton("Half-Day", daily / 2,     "1/2 Day",selectedCurrency);
-    updateRadioButton("1.5-Days", daily * 1.5,     "1.5 Days",selectedCurrency);
-    updateRadioButton("2-Days",   daily * 2,     "2 Days", selectedCurrency);
+    updateRadioButton('1-Day',    daily,       '1 Day',  currencyDisplay);
+    updateRadioButton('Half-Day', daily / 2,   '1/2 Day',currencyDisplay);
+    updateRadioButton('1.5-Days', daily * 1.5, '1.5 Days',currencyDisplay);
+    updateRadioButton('2-Days',   daily * 2,   '2 Days', currencyDisplay);
 
     // now pre-select the 1-Day option (and fire Webflow's UI logic)
     const oneDay = document.getElementById("1-Day");
@@ -88,21 +120,23 @@ document.addEventListener("DOMContentLoaded", function() {
     }
   });
 
-  function replaceCurrencySymbols(newCur) {
+  function replaceCurrencySymbols() {
+    const { display } = getSelectedCurrency();
+    const pattern = /(\$USD|\$NZD|\$AUD|\$MXN|£GBP|€EUR|₹INR|[$£€₹])/g;
     document.querySelectorAll(
-      ".amount-money, .total-gift-amount, #oneDayForYou, .w-form-label"
+      '.amount-money, .total-gift-amount, #oneDayForYou, .w-form-label'
     ).forEach(el => {
-      el.textContent = el.textContent.replace(/[$€₹£]/g, newCur);
+      el.textContent = (el.textContent || '').replace(pattern, display);
     });
   }
 
-  function updateRadioButton(id, value, label, currency) {
+  function updateRadioButton(id, value, label, currencyDisplay) {
     const rounded = Math.round(value * 2) / 2;
     const radio = document.getElementById(id);
     const lab   = document.querySelector(`span[for='${id}']`);
     if (radio && lab) {
       radio.dataset.amount = rounded;
-      lab.textContent = `${label} (${currency}${rounded.toFixed(2)})`;
+      lab.textContent = `${label} (${currencyDisplay}${rounded.toFixed(2)})`;
     }
   }
 
@@ -191,10 +225,10 @@ document.addEventListener("DOMContentLoaded", function() {
       return alert("Please add at least one charity to allocate your gift.");
     }
 
-    const selectedCurrency = localStorage.getItem("selectedCurrency") || "£";
+    const { display: summaryCurrency } = getSelectedCurrency();
 
     let summaryHTML = `
-      <p>You are pledging to give <strong>${selectedCurrency}${totalAmount.toFixed(2)}</strong> each month, split across:</p>
+      <p>You are pledging to give <strong>${summaryCurrency}${totalAmount.toFixed(2)}</strong> each month, split across:</p>
       <table class="pledge-summary-table">
         <tr>
           <th>Charity</th>
@@ -232,20 +266,19 @@ document.addEventListener("DOMContentLoaded", function() {
         </tr>`;
 
       // Create hidden inputs for each charity
-      const charityNameInput = document.createElement("input");
-      charityNameInput.type = "hidden";
+      const charityNameInput = document.createElement('input');
+      charityNameInput.type = 'hidden';
       charityNameInput.name = `Charity${charityIndex}Name`;
       charityNameInput.value = charityName;
-      charityNameInput.classList.add("pledge-hidden-input");
+      charityNameInput.classList.add('pledge-hidden-input');
       pledgeForm.appendChild(charityNameInput);
 
-      const selectedCurrency = localStorage.getItem("selectedCurrency") || "£";
-
-      const charityAmountInput = document.createElement("input");
-      charityAmountInput.type = "hidden";
+      const charityAmountInput = document.createElement('input');
+      charityAmountInput.type = 'hidden';
       charityAmountInput.name = `Charity${charityIndex}Amount`;
-      charityAmountInput.value = charityAmount.replace(/[$€₹£]/g, selectedCurrency);
-      charityAmountInput.classList.add("pledge-hidden-input");
+      // Store exactly what is shown to the user, e.g. "$USD12.50"
+      charityAmountInput.value = charityAmount;
+      charityAmountInput.classList.add('pledge-hidden-input');
       pledgeForm.appendChild(charityAmountInput);
 
       charityIndex++;
@@ -501,7 +534,7 @@ document.addEventListener("DOMContentLoaded", function() {
   function updateLabel(sec) {
     const bar = document.getElementById("allocation-bar");
     const totalAmount = parseFloat(bar.dataset.totalAmount) || 0;
-    const currency = localStorage.getItem("selectedCurrency") || "£";
+    const { display: currency } = getSelectedCurrency();
     const pct = Math.round(parseFloat(sec.style.width) || 0);
     const amt = Math.round(((pct / 100) * totalAmount) * 2) / 2;
     sec.querySelector(".amount-percent").textContent = `${pct}%`;
@@ -511,7 +544,7 @@ document.addEventListener("DOMContentLoaded", function() {
   function updateTotalGiftAmount() {
     const bar = document.getElementById("allocation-bar");
     const total = parseFloat(bar.dataset.totalAmount) || 0;
-    const currency = localStorage.getItem("selectedCurrency") || "£";
+    const { display: currency } = getSelectedCurrency();
     document.querySelector(".total-gift-amount")
             .textContent = `${currency}${total.toFixed(2)}`;
   }
