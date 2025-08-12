@@ -101,14 +101,14 @@ document.addEventListener("DOMContentLoaded", function() {
     // Scroll to Section 2 and open its accordion
     document.getElementById("s2-head").scrollIntoView({ behavior: "smooth" });
     document.getElementById("s2-head").click();
-    const { display: currencyDisplay } = getSelectedCurrency();
-    document.getElementById('oneDayForYou').textContent = `${currencyDisplay}${daily.toFixed(2)}`;
+    const { symbol: currencySymbol } = getSelectedCurrency();
+    document.getElementById('oneDayForYou').textContent = `${currencySymbol}${daily.toFixed(2)}`;
 
     // Update radio labels
-    updateRadioButton('1-Day',    daily,       '1 Day',  currencyDisplay);
-    updateRadioButton('Half-Day', daily / 2,   '1/2 Day',currencyDisplay);
-    updateRadioButton('1.5-Days', daily * 1.5, '1.5 Days',currencyDisplay);
-    updateRadioButton('2-Days',   daily * 2,   '2 Days', currencyDisplay);
+    updateRadioButton('1-Day',    daily,       '1 Day',  currencySymbol);
+    updateRadioButton('Half-Day', daily / 2,   '1/2 Day',currencySymbol);
+    updateRadioButton('1.5-Days', daily * 1.5, '1.5 Days',currencySymbol);
+    updateRadioButton('2-Days',   daily * 2,   '2 Days', currencySymbol);
 
     // now pre-select the 1-Day option (and fire Webflow's UI logic)
     const oneDay = document.getElementById("1-Day");
@@ -121,7 +121,7 @@ document.addEventListener("DOMContentLoaded", function() {
   });
 
   function replaceCurrencySymbols() {
-    const { display } = getSelectedCurrency();
+    const { symbol: display } = getSelectedCurrency();
     const pattern = /(\$USD|\$NZD|\$AUD|\$MXN|£GBP|€EUR|₹INR|[$£€₹])/g;
     document.querySelectorAll(
       '.amount-money, .total-gift-amount, #oneDayForYou, .w-form-label'
@@ -130,13 +130,13 @@ document.addEventListener("DOMContentLoaded", function() {
     });
   }
 
-  function updateRadioButton(id, value, label, currencyDisplay) {
+  function updateRadioButton(id, value, label, currencySymbol) {
     const rounded = Math.round(value * 2) / 2;
     const radio = document.getElementById(id);
     const lab   = document.querySelector(`span[for='${id}']`);
     if (radio && lab) {
       radio.dataset.amount = rounded;
-      lab.textContent = `${label} (${currencyDisplay}${rounded.toFixed(2)})`;
+      lab.textContent = `${label} (${currencySymbol}${rounded.toFixed(2)})`;
     }
   }
 
@@ -225,7 +225,7 @@ document.addEventListener("DOMContentLoaded", function() {
       return alert("Please add at least one charity to allocate your gift.");
     }
 
-    const { display: summaryCurrency } = getSelectedCurrency();
+    const { display: currency } = getSelectedCurrency();
 
     let summaryHTML = `
       <p>You are pledging to give <strong>${summaryCurrency}${totalAmount.toFixed(2)}</strong> each month, split across:</p>
@@ -253,6 +253,15 @@ document.addEventListener("DOMContentLoaded", function() {
     totalGiftInput.classList.add("pledge-hidden-input");
     pledgeForm.appendChild(totalGiftInput);
 
+    // Add hidden input for currency display
+    const { code: currencyCode } = getSelectedCurrency();
+    const currencyCodeInput = document.createElement('input');
+    currencyCodeInput.type = 'hidden';
+    currencyCodeInput.name = 'CurrencyCode';
+    currencyCodeInput.value = currencyCode;
+    currencyCodeInput.classList.add('pledge-hidden-input');
+    pledgeForm.appendChild(currencyCodeInput);
+
     // Loop through charities and add them to the table and form
     let charityIndex = 1;
     charities.forEach(charity => {
@@ -276,7 +285,7 @@ document.addEventListener("DOMContentLoaded", function() {
       const charityAmountInput = document.createElement('input');
       charityAmountInput.type = 'hidden';
       charityAmountInput.name = `Charity${charityIndex}Amount`;
-      // Store exactly what is shown to the user, e.g. "$USD12.50"
+      // Store exactly what is shown to the user (symbol-only), e.g. "$12.50"
       charityAmountInput.value = charityAmount;
       charityAmountInput.classList.add('pledge-hidden-input');
       pledgeForm.appendChild(charityAmountInput);
@@ -534,7 +543,7 @@ document.addEventListener("DOMContentLoaded", function() {
   function updateLabel(sec) {
     const bar = document.getElementById("allocation-bar");
     const totalAmount = parseFloat(bar.dataset.totalAmount) || 0;
-    const { display: currency } = getSelectedCurrency();
+    const { symbol: currency } = getSelectedCurrency();
     const pct = Math.round(parseFloat(sec.style.width) || 0);
     const amt = Math.round(((pct / 100) * totalAmount) * 2) / 2;
     sec.querySelector(".amount-percent").textContent = `${pct}%`;
@@ -544,7 +553,7 @@ document.addEventListener("DOMContentLoaded", function() {
   function updateTotalGiftAmount() {
     const bar = document.getElementById("allocation-bar");
     const total = parseFloat(bar.dataset.totalAmount) || 0;
-    const { display: currency } = getSelectedCurrency();
+    const { symbol: currency } = getSelectedCurrency();
     document.querySelector(".total-gift-amount")
             .textContent = `${currency}${total.toFixed(2)}`;
   }
