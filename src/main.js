@@ -34,8 +34,16 @@ document.addEventListener("DOMContentLoaded", function() {
   };
 
   function resolveCurrency(selectionValue) {
-    // Try by code first (e.g. "USD"), then by raw symbol (e.g. "$"), else default to GBP
+    // Try by code first (e.g. "USD")
     if (currencyMap[selectionValue]) return currencyMap[selectionValue];
+
+    // Handle display-form values like "$USD", "£GBP", "€EUR", "$NZD"
+    if (/^[£€₹$][A-Z]{3}$/.test(selectionValue)) {
+      const codeFromDisplay = selectionValue.slice(1);
+      if (currencyMap[codeFromDisplay]) return currencyMap[codeFromDisplay];
+    }
+
+    // Then by raw symbol (e.g. "$", "£", "€", "₹")
     const bySymbol = Object.values(currencyMap).find(c => c.symbol === selectionValue);
     return bySymbol || currencyMap.GBP;
   }
@@ -225,7 +233,7 @@ document.addEventListener("DOMContentLoaded", function() {
       return alert("Please add at least one charity to allocate your gift.");
     }
 
-    const { display: currency } = getSelectedCurrency();
+    const { display: summaryCurrency } = getSelectedCurrency();
 
     let summaryHTML = `
       <p>You are pledging to give <strong>${summaryCurrency}${totalAmount.toFixed(2)}</strong> each month, split across:</p>
